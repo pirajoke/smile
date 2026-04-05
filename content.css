@@ -1,0 +1,172 @@
+.ai-install-container {
+  display: inline-block;
+  position: relative;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.ai-install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  border-radius: 6px;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  white-space: nowrap;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ai-install-btn:hover {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  box-shadow: 0 1px 3px rgba(109, 40, 217, 0.3);
+}
+
+.ai-install-btn:active {
+  background: linear-gradient(135deg, #6d28d9, #4c1d95);
+}
+
+.ai-install-btn.ai-install-copied {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.ai-install-icon {
+  font-size: 14px;
+}
+
+/* Dropdown */
+.ai-install-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 100;
+  min-width: 220px;
+  padding: 4px 0;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
+  animation: ai-install-fadeIn 0.12s ease-out;
+}
+
+@keyframes ai-install-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-install-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1f2328;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.ai-install-dropdown-item:hover {
+  background: #f6f8fa;
+}
+
+.ai-install-dropdown-item.ai-install-default {
+  font-weight: 600;
+}
+
+.ai-install-dropdown-item.ai-install-default::after {
+  content: "default";
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 400;
+  color: #8b5cf6;
+  background: #f3f0ff;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.ai-install-item-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ai-install-item-label {
+  flex: 1;
+}
+
+.ai-install-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: #d8dee4;
+}
+
+.ai-install-badge-item {
+  color: #656d76;
+  font-size: 13px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .ai-install-dropdown {
+    background: #161b22;
+    border-color: #30363d;
+    box-shadow: 0 8px 24px rgba(1, 4, 9, 0.75);
+  }
+
+  .ai-install-dropdown-item {
+    color: #e6edf3;
+  }
+
+  .ai-install-dropdown-item:hover {
+    background: #21262d;
+  }
+
+  .ai-install-dropdown-item.ai-install-default::after {
+    background: #1e1535;
+    color: #a78bfa;
+  }
+
+  .ai-install-divider {
+    background: #30363d;
+  }
+
+  .ai-install-badge-item {
+    color: #8b949e;
+  }
+}
+
+/* GitHub dark theme class-based */
+[data-color-mode="dark"] .ai-install-dropdown,
+[data-dark-theme] .ai-install-dropdown {
+  background: #161b22;
+  border-color: #30363d;
+}
+
+[data-color-mode="dark"] .ai-install-dropdown-item,
+[data-dark-theme] .ai-install-dropdown-item {
+  color: #e6edf3;
+}
+
+[data-color-mode="dark"] .ai-install-dropdown-item:hover,
+[data-dark-theme] .ai-install-dropdown-item:hover {
+  background: #21262d;
+}
