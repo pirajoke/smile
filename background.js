@@ -5,30 +5,8 @@ const NM_HOST = 'com.smile.ai_install';
 async function executeCommand(msg) {
   const { toolId, command, url } = msg;
 
-  // Cursor → URL scheme
-  if (toolId === 'cursor') {
-    try {
-      const cursorUrl = `cursor://file.url/${encodeURIComponent(url || command)}`;
-      await chrome.tabs.create({ url: cursorUrl });
-      return { success: true, method: 'cursor-url' };
-    } catch (e) {
-      return { success: false, error: e.message };
-    }
-  }
-
-  // VS Code → URL scheme
-  if (toolId === 'vscode') {
-    try {
-      const vscodeUrl = `vscode://vscode.git/clone?url=${encodeURIComponent(url || '')}`;
-      await chrome.tabs.create({ url: vscodeUrl });
-      return { success: true, method: 'vscode-url' };
-    } catch (e) {
-      return { success: false, error: e.message };
-    }
-  }
-
-  // Terminal commands → Native Messaging Host
-  if (['terminal', 'claude', 'codex', 'custom'].includes(toolId)) {
+  // All commands → Native Messaging Host (terminal execution)
+  if (['cursor', 'vscode', 'terminal', 'claude', 'codex', 'custom'].includes(toolId)) {
     try {
       const prefs = await chrome.storage.sync.get({ terminalApp: 'auto' });
       const result = await new Promise((resolve, reject) => {

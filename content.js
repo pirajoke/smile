@@ -138,7 +138,7 @@
         id: 'cursor',
         label: 'Cursor',
         icon: '▶️',
-        command: `cursor ${url}`,
+        command: `git clone ${url} && open -a Cursor ${repo}`,
       },
       {
         id: 'terminal',
@@ -327,27 +327,108 @@
     showFeedback(btn, 'Copied!');
   }
 
+  function showSharePicker(dropdown, nft, repoUrl, shareTemplate) {
+    const shortUrl = repoUrl.replace(/^https?:\/\//, '');
+    let shareText;
+    if (shareTemplate) {
+      shareText = shareTemplate
+        .replace(/\{emoji\}/g, nft.emoji)
+        .replace(/\{url\}/g, shortUrl)
+        .replace(/\{fullurl\}/g, repoUrl)
+        .replace(/\{repo\}/g, repoUrl.split('/').slice(-1)[0]);
+    } else {
+      shareText = `${nft.emoji} ${shortUrl}`;
+    }
+
+    const targets = [
+      { icon: '✈️', label: 'Telegram', url: `https://t.me/share/url?url=${encodeURIComponent(repoUrl)}&text=${encodeURIComponent(nft.emoji)}` },
+      { icon: '💬', label: 'WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(nft.emoji + ' ' + repoUrl)}` },
+      { icon: '𝕏', label: 'Twitter', url: `https://x.com/intent/tweet?text=${encodeURIComponent(nft.emoji + ' ' + repoUrl)}` },
+      { icon: '📋', label: 'Copy', action: 'copy' },
+    ];
+
+    const picker = document.createElement('div');
+    picker.className = 'ai-install-share-picker';
+
+    for (const t of targets) {
+      const btn = document.createElement('button');
+      btn.className = 'ai-install-share-btn';
+      btn.title = t.label;
+      btn.innerHTML = `<span>${t.icon}</span>`;
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (t.action === 'copy') {
+          await copyEmojiShare(nft.emoji, repoUrl, shareTemplate);
+          btn.innerHTML = '<span>✓</span>';
+          setTimeout(() => closeDropdown(), 600);
+        } else {
+          window.open(t.url, '_blank');
+          closeDropdown();
+        }
+      });
+      picker.appendChild(btn);
+    }
+
+    dropdown.appendChild(picker);
+  }
+
   // --- Execute via Background ---
 
   async function executeOrCopy(toolId, command, url, btn) {
-    try {
-      const result = await chrome.runtime.sendMessage({
-        action: 'execute',
-        toolId,
-        command,
-        url,
-      });
-      if (result && result.success) {
-        const label = result.app ? `Sent to ${result.app}` : 'Opened';
-        showFeedback(btn, `${label} ✓`);
-        return;
+    // All tools → try to auto-execute via native host
+    if (toolId) {
+      try {
+        const result = await chrome.runtime.sendMessage({
+          action: 'execute',
+          toolId,
+          command,
+          url,
+        });
+        if (result && result.success) {
+          const label = result.app ? `Sent to ${result.app}` : 'Opened';
+          showFeedback(btn, `${label} ✓`);
+          return;
+        }
+      } catch {
+        // native host not available — fall through to copy
       }
-    } catch {
-      // sendMessage failed — background unreachable
     }
-    // Fallback: copy to clipboard
+    // Everything else (Terminal, Codex, Custom) → copy to clipboard
     await copyToClipboard(command);
     showCopiedFeedback(btn);
+  }
+
+  // --- Confirm Modal ---
+
+  function showInstallConfirm(repoName, toolLabel, toolIcon) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'ai-install-confirm-overlay';
+
+      const modal = document.createElement('div');
+      modal.className = 'ai-install-confirm-modal';
+      modal.innerHTML = `
+        <div class="ai-install-confirm-icon">${toolIcon}</div>
+        <div class="ai-install-confirm-title">Install with ${toolLabel}?</div>
+        <div class="ai-install-confirm-repo">${repoName}</div>
+        <div class="ai-install-confirm-actions">
+          <button class="ai-install-confirm-btn ai-install-confirm-cancel">Cancel</button>
+          <button class="ai-install-confirm-btn ai-install-confirm-ok">⚡ Install</button>
+        </div>
+      `;
+
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      const cleanup = (result) => {
+        overlay.classList.add('ai-install-confirm-closing');
+        setTimeout(() => { overlay.remove(); resolve(result); }, 150);
+      };
+
+      modal.querySelector('.ai-install-confirm-cancel').addEventListener('click', () => cleanup(false));
+      modal.querySelector('.ai-install-confirm-ok').addEventListener('click', () => cleanup(true));
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(false); });
+    });
   }
 
   // --- Dropdown ---
@@ -373,13 +454,15 @@
       customCommand: '',
       emojiPack: 'animals',
       shareTemplate: '',
-    }, (settings) => {
+    }, async (settings) => {
       const commands = getCommands(repoInfo, stackInfo, settings.customCommand);
 
       // One-click mode
       if (settings.oneClick && settings.defaultClient) {
         const cmd = commands.find((c) => c.id === settings.defaultClient);
         if (cmd) {
+          const ok = await showInstallConfirm(`${repoInfo.owner}/${repoInfo.repo}`, cmd.label, cmd.icon);
+          if (!ok) return;
           executeOrCopy(cmd.id, cmd.command, repoInfo.url, anchorBtn);
           return;
         }
@@ -433,6 +516,8 @@
         item.addEventListener('click', async (e) => {
           e.stopPropagation();
           closeDropdown();
+          const ok = await showInstallConfirm(`${repoInfo.owner}/${repoInfo.repo}`, cmd.label, cmd.icon);
+          if (!ok) return;
           await executeOrCopy(cmd.id, cmd.command, repoInfo.url, anchorBtn);
         });
         dropdown.appendChild(item);
@@ -481,13 +566,9 @@
           if (spinCount >= 8) {
             clearInterval(spinInterval);
             // Reveal!
-            shareItem.innerHTML = `<span class="ai-install-nft-emoji-inline${glowClass}">${nft.emoji}</span><span class="ai-install-item-label" style="color:${tierColors[nft.tier]};font-weight:700">${nft.label} ${stars}</span><span style="margin-left:auto;font-size:11px;color:#8b949e">Copied!</span>`;
-            copyEmojiShare(nft.emoji, repoInfo.url, settings.shareTemplate);
+            shareItem.innerHTML = `<span class="ai-install-nft-emoji-inline${glowClass}">${nft.emoji}</span><span class="ai-install-item-label" style="color:${tierColors[nft.tier]};font-weight:700">${nft.label} ${stars}</span>`;
             recordRoll(nft, repoInfo.url);
-            setTimeout(() => {
-              closeDropdown();
-              showCopiedFeedback(anchorBtn);
-            }, 1400);
+            showSharePicker(dropdown, nft, repoInfo.url, settings.shareTemplate);
           }
         }, 80);
       });

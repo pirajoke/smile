@@ -242,6 +242,133 @@
   50% { filter: drop-shadow(0 0 18px rgba(234, 179, 8, 1)); transform: scale(1.1); }
 }
 
+/* Confirm modal */
+.ai-install-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: ai-install-fadeIn 0.15s ease-out;
+}
+
+.ai-install-confirm-overlay.ai-install-confirm-closing {
+  opacity: 0;
+  transition: opacity 0.15s ease-in;
+}
+
+.ai-install-confirm-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 32px 24px;
+  min-width: 300px;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: ai-install-modalPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+
+@keyframes ai-install-modalPop {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.ai-install-confirm-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.ai-install-confirm-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2328;
+  margin-bottom: 4px;
+}
+
+.ai-install-confirm-repo {
+  font-size: 13px;
+  color: #656d76;
+  margin-bottom: 20px;
+  word-break: break-all;
+}
+
+.ai-install-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.ai-install-confirm-btn {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  font-family: inherit;
+}
+
+.ai-install-confirm-btn:active {
+  transform: scale(0.96);
+}
+
+.ai-install-confirm-cancel {
+  background: #f0f0f0;
+  color: #1f2328;
+}
+
+.ai-install-confirm-cancel:hover {
+  background: #e0e0e0;
+}
+
+.ai-install-confirm-ok {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.3);
+}
+
+.ai-install-confirm-ok:hover {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.4);
+}
+
+/* Share picker */
+.ai-install-share-picker {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px 10px;
+}
+
+.ai-install-share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d0d7de;
+  border-radius: 50%;
+  background: #f6f8fa;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.15s, transform 0.15s, border-color 0.15s;
+}
+
+.ai-install-share-btn:hover {
+  background: #eaeef2;
+  border-color: #8b5cf6;
+  transform: scale(1.1);
+}
+
+.ai-install-share-btn:active {
+  transform: scale(0.95);
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .ai-install-dropdown {
@@ -287,6 +414,38 @@
   .ai-install-smile-enabled {
     color: #3fb950;
   }
+
+  .ai-install-share-btn {
+    background: #21262d;
+    border-color: #30363d;
+  }
+
+  .ai-install-share-btn:hover {
+    background: #30363d;
+    border-color: #a78bfa;
+  }
+
+  .ai-install-confirm-modal {
+    background: #161b22;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+
+  .ai-install-confirm-title {
+    color: #e6edf3;
+  }
+
+  .ai-install-confirm-repo {
+    color: #8b949e;
+  }
+
+  .ai-install-confirm-cancel {
+    background: #21262d;
+    color: #e6edf3;
+  }
+
+  .ai-install-confirm-cancel:hover {
+    background: #30363d;
+  }
 }
 
 /* GitHub dark theme class-based */
@@ -326,4 +485,37 @@
 [data-dark-theme] .ai-install-pack-tag {
   background: #1e1535;
   color: #a78bfa;
+}
+
+[data-color-mode="dark"] .ai-install-confirm-modal,
+[data-dark-theme] .ai-install-confirm-modal {
+  background: #161b22;
+}
+
+[data-color-mode="dark"] .ai-install-confirm-title,
+[data-dark-theme] .ai-install-confirm-title {
+  color: #e6edf3;
+}
+
+[data-color-mode="dark"] .ai-install-confirm-repo,
+[data-dark-theme] .ai-install-confirm-repo {
+  color: #8b949e;
+}
+
+[data-color-mode="dark"] .ai-install-confirm-cancel,
+[data-dark-theme] .ai-install-confirm-cancel {
+  background: #21262d;
+  color: #e6edf3;
+}
+
+[data-color-mode="dark"] .ai-install-share-btn,
+[data-dark-theme] .ai-install-share-btn {
+  background: #21262d;
+  border-color: #30363d;
+}
+
+[data-color-mode="dark"] .ai-install-share-btn:hover,
+[data-dark-theme] .ai-install-share-btn:hover {
+  background: #30363d;
+  border-color: #a78bfa;
 }

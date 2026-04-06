@@ -45,10 +45,11 @@ def detect_terminal():
 
 
 def send_to_terminal(command, terminal):
-    """Send command to the specified terminal app."""
+    """Send command to the specified terminal app and bring it to front."""
     if terminal == "iTerm2":
         script = f'''
         tell application "iTerm2"
+            activate
             tell current session of current window
                 write text {json.dumps(command)}
             end tell
@@ -69,6 +70,7 @@ def send_to_terminal(command, terminal):
         terminal = "Terminal"
         script = f'''
         tell application "Terminal"
+            activate
             if (count of windows) > 0 then
                 do script {json.dumps(command)} in front window
             else
