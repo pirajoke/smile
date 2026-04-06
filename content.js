@@ -138,7 +138,8 @@
         id: 'cursor',
         label: 'Cursor',
         icon: '▶️',
-        command: `git clone ${url} && open -a Cursor ${repo}`,
+        command: `git clone ${url} && cd ${repo}${terminalExtra}`,
+        openUrl: `cursor://vscode.git/clone?url=${encodeURIComponent(url + '.git')}`,
       },
       {
         id: 'terminal',
@@ -374,8 +375,14 @@
 
   // --- Execute via Background ---
 
-  async function executeOrCopy(toolId, command, url, btn) {
-    // All tools → try to auto-execute via native host
+  async function executeOrCopy(toolId, command, url, btn, openUrl) {
+    // If tool has a direct URL scheme (e.g. Cursor), open it directly
+    if (openUrl) {
+      window.open(openUrl, '_self');
+      showFeedback(btn, 'Opening...');
+      return;
+    }
+    // Try to auto-execute via native host
     if (toolId) {
       try {
         const result = await chrome.runtime.sendMessage({
@@ -393,7 +400,7 @@
         // native host not available — fall through to copy
       }
     }
-    // Everything else (Terminal, Codex, Custom) → copy to clipboard
+    // Fallback → copy to clipboard
     await copyToClipboard(command);
     showCopiedFeedback(btn);
   }
@@ -480,7 +487,7 @@
         if (cmd) {
           const ok = await showInstallConfirm(`${repoInfo.owner}/${repoInfo.repo}`, cmd.label, cmd.icon);
           if (!ok) return;
-          executeOrCopy(cmd.id, cmd.command, repoInfo.url, anchorBtn);
+          executeOrCopy(cmd.id, cmd.command, repoInfo.url, anchorBtn, cmd.openUrl);
           return;
         }
       }
@@ -557,7 +564,7 @@
           closeDropdown();
           const ok = await showInstallConfirm(`${repoInfo.owner}/${repoInfo.repo}`, cmd.label, cmd.icon);
           if (!ok) return;
-          await executeOrCopy(cmd.id, cmd.command, repoInfo.url, anchorBtn);
+          await executeOrCopy(cmd.id, cmd.command, repoInfo.url, anchorBtn, cmd.openUrl);
         });
         dropdown.appendChild(item);
       });
@@ -781,7 +788,7 @@
         const commands = getCommands(info, stackInfo, settings.customCommand);
         const cmd = commands.find(c => c.id === settings.defaultClient) || commands[0];
         if (btn) {
-          executeOrCopy(cmd.id, cmd.command, info.url, btn);
+          executeOrCopy(cmd.id, cmd.command, info.url, btn, cmd.openUrl);
         } else {
           copyToClipboard(cmd.command);
         }
