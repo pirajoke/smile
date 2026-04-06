@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Install",
+  "name": "S.M.I.L.E. — Install with AI",
   "version": "2.2.0",
   "description": "One-click AI-powered installation for any GitHub, GitLab, or Bitbucket repo",
   "permissions": ["clipboardWrite", "storage", "nativeMessaging"],
