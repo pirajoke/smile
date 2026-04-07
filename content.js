@@ -392,11 +392,35 @@
 
   // --- Execute via Background ---
 
+  const TOOL_HINTS = {
+    claude: 'Command copied! Paste into your terminal to start.',
+    cursor: 'Opening in Cursor — repo will clone automatically.',
+    codex: 'Command copied! Paste into your terminal to start.',
+    custom: 'Command copied! Paste into your terminal.',
+  };
+
+  function showToast(text) {
+    const existing = document.querySelector('.ai-install-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'ai-install-toast';
+    toast.textContent = text;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('ai-install-toast-visible'), 10);
+    setTimeout(() => {
+      toast.classList.remove('ai-install-toast-visible');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
   async function executeOrCopy(toolId, command, url, btn, openUrl) {
     // If tool has a direct URL scheme (e.g. Cursor), open it directly
     if (openUrl) {
       window.open(openUrl, '_self');
       showFeedback(btn, 'Opening...');
+      showToast(TOOL_HINTS[toolId] || 'Opening...');
       chrome.runtime.sendMessage({ action: 'track-install' });
       return;
     }
@@ -412,6 +436,7 @@
         if (result && result.success) {
           const label = result.app ? `Sent to ${result.app}` : 'Opened';
           showFeedback(btn, `${label} ✓`);
+          showToast(TOOL_HINTS[toolId] || `${label} ✓`);
           return; // already tracked in background.js
         }
       } catch {
@@ -421,6 +446,7 @@
     // Fallback → copy to clipboard
     await copyToClipboard(command);
     showCopiedFeedback(btn);
+    showToast(TOOL_HINTS[toolId] || 'Command copied! Paste into your terminal.');
     chrome.runtime.sendMessage({ action: 'track-install' });
   }
 
