@@ -1266,9 +1266,6 @@
       dropdown.appendChild(shareItem);
 
       anchorBtn.parentElement.appendChild(dropdown);
-
-      // Auto-show summary on dropdown open
-      showRepoSummary(dropdown, repoInfo, stackInfo);
     });
   }
 
