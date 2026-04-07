@@ -401,16 +401,17 @@
 
 .ai-install-panel-close {
   position: absolute;
-  top: 4px;
-  right: 6px;
+  top: 2px;
+  right: 2px;
   background: none;
   border: none;
   color: #8b949e;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 2px 6px;
   line-height: 1;
-  z-index: 1;
+  z-index: 2;
+  border-radius: 4px;
 }
 
 .ai-install-panel-close:hover {
@@ -575,6 +576,7 @@
   display: flex;
   gap: 2px;
   padding: 4px;
+  padding-right: 24px;
   background: #f0f0f0;
   border-bottom: 1px solid #d0d7de;
 }
