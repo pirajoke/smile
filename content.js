@@ -176,7 +176,7 @@
         label: 'Codex',
         icon: TOOL_ICONS.codex,
         command: `codex "clone ${url} and set it up"`,
-        launchApp: 'codex app',
+        launchApp: 'open -a Codex',
         copyUrl: url,
       },
     ];
