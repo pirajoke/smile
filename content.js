@@ -765,7 +765,7 @@
     dropdown.appendChild(panel);
 
     let repoContext = '';
-    getRepoContext(repoInfo, stackInfo).then(ctx => { repoContext = ctx || ''; });
+    const repoContextReady = getRepoContext(repoInfo, stackInfo).then(ctx => { repoContext = ctx || ''; });
     const conversationHistory = [];
 
     function renderMarkdown(text) {
@@ -833,10 +833,17 @@
     });
     input.addEventListener('click', (e) => e.stopPropagation());
 
-    const hasContext = !!repoContext;
-    addMessage('assistant', hasContext
-      ? `Ready! I've analyzed ${repoInfo.owner}/${repoInfo.repo} — files, README, topics, languages. Ask me anything.`
-      : `No repo info found on this page. I can only answer general questions about ${repoInfo.owner}/${repoInfo.repo}.`);
+    addMessage('assistant', 'Loading repo context...');
+    repoContextReady.then(() => {
+      // Replace loading message with actual status
+      const lastMsg = messages.querySelector('.ai-install-chat-assistant:last-child');
+      if (lastMsg) {
+        const hasContext = !!repoContext;
+        lastMsg.innerHTML = renderMarkdown(hasContext
+          ? `Ready! I've analyzed ${repoInfo.owner}/${repoInfo.repo} — files, README, topics, languages. Ask me anything.`
+          : `No repo info found on this page. I can only answer general questions about ${repoInfo.owner}/${repoInfo.repo}.`);
+      }
+    });
 
     setTimeout(() => input.focus(), 100);
   }
