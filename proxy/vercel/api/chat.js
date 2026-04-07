@@ -1,4 +1,8 @@
-import { kv } from '@vercel/kv';
+let kv = null;
+try {
+  const mod = await import('@vercel/kv');
+  kv = mod.kv;
+} catch { /* KV not configured — use in-memory fallback */ }
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const SMILE_TOKEN = process.env.SMILE_TOKEN || 'smile-2024-secret';
@@ -6,23 +10,49 @@ const RATE_LIMIT = 20; // per IP per hour
 const RATE_WINDOW = 3600; // seconds
 const DAILY_CAP = 500; // total requests per day
 
+// In-memory fallback (resets on cold start, but keeps proxy working without KV)
+const memRateLimits = new Map();
+let memDailyCount = 0;
+let memDailyDate = '';
+
 async function checkRateLimit(ip) {
-  const key = `rl:${ip}`;
-  const count = await kv.incr(key);
-  if (count === 1) {
-    await kv.expire(key, RATE_WINDOW);
+  if (kv) {
+    try {
+      const key = `rl:${ip}`;
+      const count = await kv.incr(key);
+      if (count === 1) await kv.expire(key, RATE_WINDOW);
+      return count <= RATE_LIMIT;
+    } catch { /* KV error — fall through to memory */ }
   }
-  return count <= RATE_LIMIT;
+  // In-memory fallback
+  const now = Date.now();
+  const entry = memRateLimits.get(ip);
+  if (!entry || now - entry.start > RATE_WINDOW * 1000) {
+    memRateLimits.set(ip, { start: now, count: 1 });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
 }
 
 async function checkDailyCap() {
   const today = new Date().toISOString().slice(0, 10);
-  const key = `daily:${today}`;
-  const count = await kv.incr(key);
-  if (count === 1) {
-    await kv.expire(key, 86400);
+  if (kv) {
+    try {
+      const key = `daily:${today}`;
+      const count = await kv.incr(key);
+      if (count === 1) await kv.expire(key, 86400);
+      return count <= DAILY_CAP;
+    } catch { /* KV error — fall through to memory */ }
   }
-  return count <= DAILY_CAP;
+  // In-memory fallback
+  if (memDailyDate !== today) {
+    memDailyDate = today;
+    memDailyCount = 0;
+  }
+  memDailyCount++;
+  return memDailyCount <= DAILY_CAP;
 }
 
 export default async function handler(req, res) {
@@ -48,7 +78,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Daily limit reached. Try again tomorrow or add your own API key.' });
   }
 
-  // Per-IP rate limit (persistent via KV)
+  // Per-IP rate limit (KV with in-memory fallback)
   const ip = req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
   if (!(await checkRateLimit(ip))) {
     return res.status(429).json({ error: 'Rate limit exceeded. Try again later.' });
