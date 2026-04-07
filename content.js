@@ -1185,6 +1185,26 @@
       divider.className = 'ai-install-divider';
       dropdown.appendChild(divider);
 
+      // Settings
+      const settingsItem = document.createElement('button');
+      settingsItem.className = 'ai-install-dropdown-item ai-install-badge-item';
+      const settingsIcon = document.createElement('span');
+      settingsIcon.className = 'ai-install-item-icon';
+      settingsIcon.textContent = '⚙️';
+      const settingsLabel = document.createElement('span');
+      settingsLabel.className = 'ai-install-item-label';
+      settingsLabel.textContent = 'Settings';
+      settingsItem.append(settingsIcon, settingsLabel);
+      settingsItem.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeDropdown();
+        try {
+          chrome.runtime.sendMessage({ action: 'open-popup' });
+        } catch {}
+        showToast('Opening settings... (or click ⚡ SMILE icon in toolbar)');
+      });
+      dropdown.appendChild(settingsItem);
+
       // NFT Share
       const shareItem = document.createElement('button');
       shareItem.className = 'ai-install-dropdown-item ai-install-share-item';

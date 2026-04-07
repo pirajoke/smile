@@ -326,6 +326,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.action === 'open-popup') {
+    chrome.action.openPopup();
+    return;
+  }
+
   if (msg.action === 'quick-install') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
