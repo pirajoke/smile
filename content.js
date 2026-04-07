@@ -150,30 +150,38 @@
     else if (stacks.includes('Rust')) terminalExtra = ' && cargo build';
     else if (stacks.includes('Go')) terminalExtra = ' && go build ./...';
 
+    // Tool icons as inline SVG data URIs
+    const TOOL_ICONS = {
+      claude: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.98 9.01 12 4.03 7.02 9.01 12 13.99l4.98-4.98Z" fill="#D97757"/><path d="m12 13.99-4.98 4.98L12 23.95l4.98-4.98L12 13.99Z" fill="#D97757" opacity=".6"/><path d="M7.02 9.01 2.04 13.99l4.98 4.98L12 13.99 7.02 9.01Z" fill="#D97757" opacity=".8"/><path d="M16.98 9.01 12 13.99l4.98 4.98 4.98-4.98-4.98-4.98Z" fill="#D97757" opacity=".8"/></svg>`,
+      cursor: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="4" fill="#1A1A2E"/><path d="M7 7l10 5-10 5V7z" fill="#00D4AA"/></svg>`,
+      terminal: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="4" width="20" height="16" rx="2" fill="#1E293B"/><path d="M6 9l4 3-4 3" stroke="#4ADE80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15h6" stroke="#64748B" stroke-width="2" stroke-linecap="round"/></svg>`,
+      codex: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="4" fill="#0D1117"/><path d="M12 6a5 5 0 0 0-5 5c0 1.5.7 2.8 1.7 3.7L8 18h8l-.7-3.3A5 5 0 0 0 17 11a5 5 0 0 0-5-5Z" fill="#58A6FF"/><circle cx="10" cy="10.5" r="1" fill="#fff"/><circle cx="14" cy="10.5" r="1" fill="#fff"/></svg>`,
+    };
+
     const commands = [
       {
         id: 'claude',
         label: 'Claude Code',
-        icon: '🤖',
+        icon: TOOL_ICONS.claude,
         command: `claude "clone ${url}${stackLabel} and set it up following the README${setupHint}${dockerNote}"`,
       },
       {
         id: 'cursor',
         label: 'Cursor',
-        icon: '▶️',
+        icon: TOOL_ICONS.cursor,
         command: `git clone ${url} && cd ${repo}${terminalExtra}`,
         openUrl: `cursor://vscode.git/clone?url=${encodeURIComponent(url + '.git')}`,
       },
       {
         id: 'terminal',
         label: 'Terminal + Claude',
-        icon: '💻',
+        icon: TOOL_ICONS.terminal,
         command: `git clone ${url} && cd ${repo}${terminalExtra} && claude "set up this project"`,
       },
       {
         id: 'codex',
         label: 'Codex CLI',
-        icon: '🧠',
+        icon: TOOL_ICONS.codex,
         command: `codex "clone ${url} and set it up"`,
       },
     ];
@@ -927,7 +935,11 @@
         }
         const cmdIcon = document.createElement('span');
         cmdIcon.className = 'ai-install-item-icon';
-        cmdIcon.textContent = cmd.icon;
+        if (cmd.icon.startsWith('<svg')) {
+          cmdIcon.innerHTML = cmd.icon;
+        } else {
+          cmdIcon.textContent = cmd.icon;
+        }
         const cmdLabel = document.createElement('span');
         cmdLabel.className = 'ai-install-item-label';
         cmdLabel.textContent = cmd.label;
