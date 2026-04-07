@@ -152,9 +152,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const result = await callAI({
         messages: [{
           role: 'user',
-          content: `Summarize this GitHub repo "${msg.repoName}" based on its README. Give 3-4 concise bullet points covering: what it does, key features, and how to get started. Keep it short and practical.\n\nREADME:\n${msg.readmeText}`,
+          content: `Summarize "${msg.repoName}" in exactly 3 short lines. Format:\n🎯 [What it does — one sentence]\n⚡ [Key feature or tech — one sentence]\n🚀 [How to start — one sentence]\n\nNo headers, no markdown, no extra text. Plain text only.\n\nREADME:\n${msg.readmeText}`,
         }],
-        max_tokens: 512,
+        max_tokens: 150,
       });
       if (result.text) {
         sendResponse({ summary: result.text });
