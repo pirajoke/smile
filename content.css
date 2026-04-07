@@ -634,6 +634,9 @@
 /* Custom tool modal form */
 .ai-install-tool-modal {
   text-align: left;
+  min-width: 280px;
+  max-width: 320px;
+  padding: 24px !important;
 }
 
 .ai-install-tool-form {
@@ -641,15 +644,18 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow: hidden;
 }
 
 .ai-install-tool-row {
   display: flex;
   gap: 8px;
+  overflow: hidden;
 }
 
 .ai-install-tool-input {
   flex: 1;
+  min-width: 0;
   padding: 8px 10px;
   font-size: 13px;
   border: 1px solid #d0d7de;
@@ -658,6 +664,7 @@
   font-family: inherit;
   color: #1f2328;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .ai-install-tool-input:focus {
@@ -666,9 +673,12 @@
 }
 
 .ai-install-tool-icon-input {
-  flex: 0 0 48px;
+  flex: 0 0 44px !important;
+  width: 44px !important;
+  max-width: 44px !important;
   text-align: center;
   font-size: 18px;
+  padding: 8px 4px;
 }
 
 .ai-install-tool-textarea {
@@ -679,7 +689,7 @@
   border: 1px solid #d0d7de;
   border-radius: 8px;
   outline: none;
-  resize: vertical;
+  resize: none;
   color: #1f2328;
   background: #fff;
   box-sizing: border-box;
