@@ -268,10 +268,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const [owner, repo] = msg.repoName.split('/');
         if (owner && repo) trackRepo(owner, repo);
       }
+      const lang = msg.userLang || 'en';
+      const langHint = lang.startsWith('en') ? '' : `\n\nIMPORTANT: Reply in the language with code "${lang}". Do NOT reply in English.`;
       const result = await callAI({
         messages: [{
           role: 'user',
-          content: `Summarize "${msg.repoName}" in exactly 3 short lines. Format:\n🎯 [What it does — one sentence]\n⚡ [Key feature or tech — one sentence]\n🚀 [How to start — one sentence]\n\nNo headers, no markdown, no extra text. Plain text only.\n\nREADME:\n${msg.readmeText}`,
+          content: `Summarize "${msg.repoName}" in exactly 3 short lines. Format:\n🎯 [What it does — one sentence]\n⚡ [Key feature or tech — one sentence]\n🚀 [How to start — one sentence]\n\nNo headers, no markdown, no extra text. Plain text only.${langHint}\n\nREADME:\n${msg.readmeText}`,
         }],
         max_tokens: 150,
       });

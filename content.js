@@ -808,6 +808,7 @@
         action: 'summarize',
         readmeText: context,
         repoName: `${repoInfo.owner}/${repoInfo.repo}`,
+        userLang: navigator.language || 'en',
       }, (response) => {
         if (response && response.summary) {
           setPanelText(response.summary);
@@ -1242,6 +1243,9 @@
       dropdown.appendChild(shareItem);
 
       anchorBtn.parentElement.appendChild(dropdown);
+
+      // Auto-show summary on dropdown open
+      showRepoSummary(dropdown, repoInfo, stackInfo);
     });
   }
 
