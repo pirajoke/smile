@@ -866,7 +866,10 @@
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           if (!m.available) {
-            addMessage('assistant', `${m.label} requires your Claude API key. Add it in extension settings for deeper analysis.`);
+            btn.style.animation = 'none';
+            btn.offsetHeight; // force reflow
+            btn.style.animation = 'ai-install-shake 0.3s ease';
+            addMessage('assistant', `🔑 ${m.label} requires your Claude API key. Add it in extension settings.`);
             return;
           }
           selectedModel = m.id;

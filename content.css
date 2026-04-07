@@ -620,6 +620,12 @@
   font-size: 9px;
 }
 
+@keyframes ai-install-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
 /* Add custom tool button */
 .ai-install-add-tool-item {
   color: #8b5cf6 !important;
