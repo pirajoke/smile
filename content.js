@@ -1181,25 +1181,6 @@
       divider.className = 'ai-install-divider';
       dropdown.appendChild(divider);
 
-      // Badge
-      const badgeItem = document.createElement('button');
-      badgeItem.className = 'ai-install-dropdown-item ai-install-badge-item';
-      const badgeIcon = document.createElement('span');
-      badgeIcon.className = 'ai-install-item-icon';
-      badgeIcon.textContent = '🏷️';
-      const badgeLabel = document.createElement('span');
-      badgeLabel.className = 'ai-install-item-label';
-      badgeLabel.textContent = 'Copy badge for README';
-      badgeItem.append(badgeIcon, badgeLabel);
-      badgeItem.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const badge = `[![Install with AI](https://img.shields.io/badge/Install_with-AI_%E2%9A%A1-blueviolet?style=for-the-badge)](${repoInfo.url})`;
-        await copyToClipboard(badge);
-        closeDropdown();
-        showCopiedFeedback(anchorBtn);
-      });
-      dropdown.appendChild(badgeItem);
-
       // NFT Share
       const shareItem = document.createElement('button');
       shareItem.className = 'ai-install-dropdown-item ai-install-share-item';
