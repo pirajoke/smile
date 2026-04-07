@@ -167,12 +167,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.action === 'chat') {
     (async () => {
-      const systemPrompt = `You're a friendly dev assistant who knows the repo "${msg.repoName}" (stack: ${msg.stacks?.join(', ') || 'unknown'}). You've read the README below. Answer in 2-4 sentences, be direct. You CAN share opinions, assessments, and recommendations when asked. Use the README as primary context but feel free to add your dev expertise. Reply in the same language the user writes in.\n\nREADME:\n${msg.readmeText || 'No README available.'}`;
+      const systemPrompt = `You're a friendly dev assistant who knows the repo "${msg.repoName}". You've analyzed the repo page: file tree, README, about, topics, languages, stats. Answer in 2-5 sentences, be direct. You CAN share opinions, assessments, and recommendations when asked. Use the repo context as primary source but add your dev expertise. Reply in the same language the user writes in.\n\nFormatting rules:\n- Use emoji headers for sections (🎯, ⚡, 📦, 🔧, etc.)\n- Separate topics with blank lines\n- Use **bold** for key terms\n- Keep it scannable — short paragraphs, not walls of text\n\nRepo context:\n${msg.readmeText || 'No repo info available.'}`;
 
       const result = await callAI({
         messages: msg.messages,
         system: systemPrompt,
-        max_tokens: 300,
+        max_tokens: 600,
         model: msg.model || 'haiku',
       });
       if (result.text) {

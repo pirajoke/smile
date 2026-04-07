@@ -446,10 +446,20 @@
   padding: 6px 10px;
   border-radius: 12px;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.5;
   max-width: 85%;
   word-break: break-word;
-  white-space: pre-wrap;
+}
+
+.ai-install-chat-msg code {
+  background: rgba(127, 127, 127, 0.15);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.ai-install-chat-msg strong {
+  font-weight: 600;
 }
 
 .ai-install-chat-user {

@@ -260,7 +260,7 @@
   // --- Share ---
 
   async function copyEmojiShare(emoji, url, shareTemplate) {
-    const shortUrl = url.replace(/^https?:\/\//, '');
+    const shortUrl = url.replace(/^https?:\/\/[^/]+\//, '');
     let plain;
     if (shareTemplate) {
       plain = shareTemplate
@@ -328,18 +328,10 @@
     showFeedback(btn, 'Copied!');
   }
 
-  function showSharePicker(dropdown, nft, repoUrl, shareTemplate) {
-    const shortUrl = repoUrl.replace(/^https?:\/\//, '');
-    let shareText;
-    if (shareTemplate) {
-      shareText = shareTemplate
-        .replace(/\{emoji\}/g, nft.emoji)
-        .replace(/\{url\}/g, shortUrl)
-        .replace(/\{fullurl\}/g, repoUrl)
-        .replace(/\{repo\}/g, repoUrl.split('/').slice(-1)[0]);
-    } else {
-      shareText = `${nft.emoji} ${shortUrl}`;
-    }
+  function showSharePicker(shareItem, nft, repoUrl, shareTemplate) {
+    // Remove existing picker
+    const oldPicker = shareItem.parentElement?.querySelector('.ai-install-share-picker');
+    if (oldPicker) oldPicker.remove();
 
     const targets = [
       { icon: '✈️', label: 'Telegram', url: `https://t.me/share/url?url=${encodeURIComponent(repoUrl)}&text=${encodeURIComponent(nft.emoji)}` },
@@ -370,7 +362,8 @@
       picker.appendChild(btn);
     }
 
-    dropdown.appendChild(picker);
+    // Insert right after the share button
+    shareItem.insertAdjacentElement('afterend', picker);
   }
 
   // --- Execute via Background ---
@@ -471,6 +464,75 @@
     return text ? text.slice(0, 4000) : null;
   }
 
+  // --- Full Repo Context ---
+
+  function getRepoContext(repoInfo, stackInfo) {
+    const parts = [];
+
+    // 1. About / description
+    const aboutEl = document.querySelector('.f4.my-3, .BorderGrid-cell p, [itemprop="about"]');
+    if (aboutEl) {
+      const about = aboutEl.textContent.trim();
+      if (about) parts.push(`About: ${about}`);
+    }
+
+    // 2. Topics / tags
+    const topicEls = document.querySelectorAll('.topic-tag, a[data-octo-click="topic_click"], [data-testid="topic"]');
+    const topics = [...topicEls].map(el => el.textContent.trim()).filter(Boolean);
+    if (topics.length) parts.push(`Topics: ${topics.join(', ')}`);
+
+    // 3. Stack info
+    if (stackInfo.stacks.length) parts.push(`Detected stack: ${stackInfo.stacks.join(', ')}`);
+    if (stackInfo.hasDocker) parts.push('Has Docker support');
+
+    // 4. File tree from DOM
+    const fileEls = document.querySelectorAll(
+      '[role="rowheader"] a, .js-navigation-open, .react-directory-row a, ' +
+      '.tree-item-file-name a, .file-name a, td.filename a, [data-qa="file-name"] a, ' +
+      'a.Link--primary[title]'
+    );
+    const files = [];
+    fileEls.forEach(el => {
+      const name = el.textContent.trim();
+      if (name && !name.includes(' ') && name.length < 80) files.push(name);
+    });
+    const uniqueFiles = [...new Set(files)];
+    if (uniqueFiles.length) parts.push(`Files in root: ${uniqueFiles.join(', ')}`);
+
+    // 5. Sidebar stats
+    const statsItems = document.querySelectorAll('.BorderGrid-cell');
+    statsItems.forEach(cell => {
+      const text = cell.textContent.trim().replace(/\s+/g, ' ');
+      if (text.includes('star')) {
+        const m = text.match(/([\d,.kKmM]+)\s*stars?/i);
+        if (m) parts.push(`Stars: ${m[1]}`);
+      }
+      if (text.includes('fork')) {
+        const m = text.match(/([\d,.kKmM]+)\s*forks?/i);
+        if (m) parts.push(`Forks: ${m[1]}`);
+      }
+      if (text.includes('License') || text.includes('license')) {
+        const m = text.match(/(MIT|Apache|GPL|BSD|ISC|MPL|LGPL|AGPL|Unlicense)[^\n]*/i);
+        if (m) parts.push(`License: ${m[0].trim()}`);
+      }
+    });
+
+    // 6. Languages bar
+    const langEls = document.querySelectorAll('[aria-label="Repository languages"] li, .repository-lang-stats-graph span, .Progress + ul li');
+    const langs = [];
+    langEls.forEach(el => {
+      const text = el.textContent.trim().replace(/\s+/g, ' ');
+      if (text) langs.push(text);
+    });
+    if (langs.length) parts.push(`Languages: ${langs.join(', ')}`);
+
+    // 7. README text
+    const readmeText = getReadmeText();
+    if (readmeText) parts.push(`README:\n${readmeText}`);
+
+    return parts.join('\n') || null;
+  }
+
   // --- Quick Summary ---
 
   function getBasicSummary(repoInfo, stackInfo) {
@@ -495,7 +557,7 @@
   }
 
   function showRepoSummary(dropdown, repoInfo, stackInfo) {
-    // Remove existing panel if any
+    // Toggle existing panel
     const existing = dropdown.querySelector('.ai-install-summary-panel');
     if (existing) { existing.remove(); return; }
 
@@ -503,6 +565,14 @@
     panel.className = 'ai-install-summary-panel';
 
     const cacheKey = `summary_${repoInfo.owner}_${repoInfo.repo}`;
+
+    // Insert before chat panel if it exists, otherwise append
+    const chatPanel = dropdown.querySelector('.ai-install-chat-panel');
+    if (chatPanel) {
+      dropdown.insertBefore(panel, chatPanel);
+    } else {
+      dropdown.appendChild(panel);
+    }
 
     // Check cache first
     chrome.storage.local.get([cacheKey], (data) => {
@@ -519,22 +589,21 @@
       spinner.textContent = 'Generating summary...';
       panel.appendChild(spinner);
 
-      const readmeText = getReadmeText();
-      if (!readmeText) {
-        panel.textContent = 'No README found on this page.';
+      const context = getRepoContext(repoInfo, stackInfo);
+      if (!context) {
+        panel.textContent = 'No repo info found on this page.';
         return;
       }
 
       chrome.runtime.sendMessage({
         action: 'summarize',
-        readmeText,
+        readmeText: context,
         repoName: `${repoInfo.owner}/${repoInfo.repo}`,
       }, (response) => {
         if (response && response.summary) {
           panel.textContent = response.summary;
           chrome.storage.local.set({ [cacheKey]: { text: response.summary, ts: Date.now() } });
         } else {
-          // Fallback to basic DOM info
           const basic = getBasicSummary(repoInfo, stackInfo);
           panel.textContent = basic;
           if (response?.error) {
@@ -546,8 +615,6 @@
         }
       });
     });
-
-    dropdown.appendChild(panel);
   }
 
   // --- Repo Chat ---
@@ -555,10 +622,6 @@
   function showRepoChat(dropdown, repoInfo, stackInfo) {
     const existing = dropdown.querySelector('.ai-install-chat-panel');
     if (existing) { existing.remove(); return; }
-
-    // Remove summary panel if open
-    const summaryPanel = dropdown.querySelector('.ai-install-summary-panel');
-    if (summaryPanel) summaryPanel.remove();
 
     const panel = document.createElement('div');
     panel.className = 'ai-install-chat-panel';
@@ -614,13 +677,26 @@
     panel.append(modelBar, messages, inputRow);
     dropdown.appendChild(panel);
 
-    const readmeText = getReadmeText() || '';
+    const repoContext = getRepoContext(repoInfo, stackInfo) || '';
     const conversationHistory = [];
+
+    function renderMarkdown(text) {
+      return text
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+    }
 
     function addMessage(role, text) {
       const msg = document.createElement('div');
       msg.className = `ai-install-chat-msg ai-install-chat-${role}`;
-      msg.textContent = text;
+      if (role === 'assistant') {
+        msg.innerHTML = renderMarkdown(text);
+      } else {
+        msg.textContent = text;
+      }
       messages.appendChild(msg);
       messages.scrollTop = messages.scrollHeight;
     }
@@ -647,7 +723,7 @@
       chrome.runtime.sendMessage({
         action: 'chat',
         messages: conversationHistory,
-        readmeText,
+        readmeText: repoContext,
         repoName: `${repoInfo.owner}/${repoInfo.repo}`,
         stacks: stackInfo.stacks,
         model: selectedModel,
@@ -669,10 +745,10 @@
     });
     input.addEventListener('click', (e) => e.stopPropagation());
 
-    const hasReadme = !!readmeText;
-    addMessage('assistant', hasReadme
-      ? `Ready! I've read the README for ${repoInfo.owner}/${repoInfo.repo}. Ask me anything.`
-      : `No README found on this page. I can only answer general questions about ${repoInfo.owner}/${repoInfo.repo}.`);
+    const hasContext = !!repoContext;
+    addMessage('assistant', hasContext
+      ? `Ready! I've analyzed ${repoInfo.owner}/${repoInfo.repo} — files, README, topics, languages. Ask me anything.`
+      : `No repo info found on this page. I can only answer general questions about ${repoInfo.owner}/${repoInfo.repo}.`);
 
     setTimeout(() => input.focus(), 100);
   }
@@ -901,7 +977,7 @@
             revealLabel.textContent = `${nft.label} ${stars}`;
             shareItem.append(revealEmoji, revealLabel);
             recordRoll(nft, repoInfo.url);
-            showSharePicker(dropdown, nft, repoInfo.url, settings.shareTemplate);
+            showSharePicker(shareItem, nft, repoInfo.url, settings.shareTemplate);
           }
         }, 80);
       });
