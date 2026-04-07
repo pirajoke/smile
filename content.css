@@ -375,9 +375,27 @@
   font-size: 13px;
 }
 
+.ai-install-panel-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  z-index: 1;
+}
+
+.ai-install-panel-close:hover {
+  color: #1f2328;
+}
+
 .ai-install-summary-panel {
   margin: 4px 12px 8px;
-  padding: 10px 12px;
+  padding: 10px 28px 10px 12px;
   font-size: 12px;
   line-height: 1.5;
   color: #1f2328;
@@ -782,6 +800,16 @@
 [data-dark-theme] .ai-install-share-btn:hover {
   background: #30363d;
   border-color: #a78bfa;
+}
+
+[data-color-mode="dark"] .ai-install-panel-close,
+[data-dark-theme] .ai-install-panel-close {
+  color: #8b949e;
+}
+
+[data-color-mode="dark"] .ai-install-panel-close:hover,
+[data-dark-theme] .ai-install-panel-close:hover {
+  color: #e6edf3;
 }
 
 [data-color-mode="dark"] .ai-install-summary-panel,

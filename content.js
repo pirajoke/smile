@@ -606,6 +606,13 @@
 
     const panel = document.createElement('div');
     panel.className = 'ai-install-summary-panel';
+    panel.style.position = 'relative';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'ai-install-panel-close';
+    closeBtn.textContent = '\u00D7';
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); panel.remove(); });
+    panel.appendChild(closeBtn);
 
     const cacheKey = `summary_${repoInfo.owner}_${repoInfo.repo}`;
 
@@ -617,16 +624,24 @@
       dropdown.appendChild(panel);
     }
 
+    function setPanelText(text) {
+      // Remove everything except close button, then add text
+      [...panel.childNodes].forEach(n => { if (n !== closeBtn) n.remove(); });
+      const content = document.createElement('span');
+      content.textContent = text;
+      panel.appendChild(content);
+    }
+
     // Check cache first
     chrome.storage.local.get([cacheKey], async (data) => {
       const cached = data[cacheKey];
       if (cached && (Date.now() - cached.ts < 24 * 60 * 60 * 1000)) {
-        panel.textContent = cached.text;
+        setPanelText(cached.text);
         return;
       }
 
       // Show loading
-      panel.innerHTML = '';
+      [...panel.childNodes].forEach(n => { if (n !== closeBtn) n.remove(); });
       const spinner = document.createElement('div');
       spinner.className = 'ai-install-summary-loading';
       spinner.textContent = 'Generating summary...';
@@ -634,7 +649,7 @@
 
       const context = await getRepoContext(repoInfo, stackInfo);
       if (!context) {
-        panel.textContent = 'No repo info found on this page.';
+        setPanelText('No repo info found on this page.');
         return;
       }
 
@@ -644,11 +659,11 @@
         repoName: `${repoInfo.owner}/${repoInfo.repo}`,
       }, (response) => {
         if (response && response.summary) {
-          panel.textContent = response.summary;
+          setPanelText(response.summary);
           chrome.storage.local.set({ [cacheKey]: { text: response.summary, ts: Date.now() } });
         } else {
           const basic = getBasicSummary(repoInfo, stackInfo);
-          panel.textContent = basic;
+          setPanelText(basic);
           if (response?.error) {
             const hint = document.createElement('div');
             hint.className = 'ai-install-summary-hint';
