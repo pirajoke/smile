@@ -1,31 +1,56 @@
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const RATE_LIMIT = 20;
-const RATE_WINDOW = 60 * 60 * 1000;
-const rateLimits = new Map();
+import { kv } from '@vercel/kv';
 
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const entry = rateLimits.get(ip);
-  if (!entry || now - entry.start > RATE_WINDOW) {
-    rateLimits.set(ip, { start: now, count: 1 });
-    return true;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const SMILE_TOKEN = process.env.SMILE_TOKEN || 'smile-2024-secret';
+const RATE_LIMIT = 20; // per IP per hour
+const RATE_WINDOW = 3600; // seconds
+const DAILY_CAP = 500; // total requests per day
+
+async function checkRateLimit(ip) {
+  const key = `rl:${ip}`;
+  const count = await kv.incr(key);
+  if (count === 1) {
+    await kv.expire(key, RATE_WINDOW);
   }
-  if (entry.count >= RATE_LIMIT) return false;
-  entry.count++;
-  return true;
+  return count <= RATE_LIMIT;
+}
+
+async function checkDailyCap() {
+  const today = new Date().toISOString().slice(0, 10);
+  const key = `daily:${today}`;
+  const count = await kv.incr(key);
+  if (count === 1) {
+    await kv.expire(key, 86400);
+  }
+  return count <= DAILY_CAP;
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // CORS: only allow chrome extensions
+  const origin = req.headers.origin || '';
+  if (origin.startsWith('chrome-extension://')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-smile-token');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method === 'GET') return res.json({ status: 'ok', service: 'smile-ai-proxy' });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Token validation
+  const token = req.headers['x-smile-token'];
+  if (token !== SMILE_TOKEN) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  // Daily cost cap
+  if (!(await checkDailyCap())) {
+    return res.status(429).json({ error: 'Daily limit reached. Try again tomorrow or add your own API key.' });
+  }
+
+  // Per-IP rate limit (persistent via KV)
   const ip = req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
-  if (!checkRateLimit(ip)) {
+  if (!(await checkRateLimit(ip))) {
     return res.status(429).json({ error: 'Rate limit exceeded. Try again later.' });
   }
 

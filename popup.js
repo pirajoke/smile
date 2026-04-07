@@ -18,6 +18,7 @@ chrome.storage.sync.get({
   terminalApp: 'auto',
   claudeApiKey: '',
   nftStats: { total: 0, tiers: {}, history: [] },
+  smileStats: { summaries: 0, chats: 0, installs: 0, repos: [] },
 }, (data) => {
   clientSelect.value = data.defaultClient;
   oneClickToggle.checked = data.oneClick;
@@ -29,6 +30,7 @@ chrome.storage.sync.get({
   updateOneClickState();
   renderStats(data.nftStats);
   renderHistory(data.nftStats.history);
+  renderUsageStats(data.smileStats);
 });
 
 // Check bridge status
@@ -171,4 +173,11 @@ function timeAgo(ts) {
   if (hrs < 24) return `${hrs}h`;
   const days = Math.floor(hrs / 24);
   return `${days}d`;
+}
+
+function renderUsageStats(stats) {
+  document.getElementById('stat-summaries').textContent = stats.summaries || 0;
+  document.getElementById('stat-chats').textContent = stats.chats || 0;
+  document.getElementById('stat-installs').textContent = stats.installs || 0;
+  document.getElementById('stat-repos').textContent = stats.repos?.length || 0;
 }

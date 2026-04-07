@@ -38,6 +38,83 @@
     return { owner, repo: cleanRepo, url, platform };
   }
 
+  // --- GitHub API Context ---
+
+  async function fetchRepoContextAPI(owner, repo) {
+    const cacheKey = `ghapi_${owner}_${repo}`;
+    const cached = await new Promise(r => chrome.storage.local.get([cacheKey], r));
+    if (cached[cacheKey] && (Date.now() - cached[cacheKey].ts < 3600000)) {
+      return cached[cacheKey].data;
+    }
+
+    const base = `https://api.github.com/repos/${owner}/${repo}`;
+    try {
+      const [repoResp, contentsResp, readmeResp, langsResp] = await Promise.allSettled([
+        fetch(base, { headers: { Accept: 'application/vnd.github.v3+json' } }),
+        fetch(`${base}/contents/`, { headers: { Accept: 'application/vnd.github.v3+json' } }),
+        fetch(`${base}/readme`, { headers: { Accept: 'application/vnd.github.v3+json' } }),
+        fetch(`${base}/languages`, { headers: { Accept: 'application/vnd.github.v3+json' } }),
+      ]);
+
+      // Check for rate limit
+      if (repoResp.status === 'fulfilled' && repoResp.value.status === 403) {
+        return null; // rate limited, fallback to DOM
+      }
+
+      const parts = [];
+
+      // Repo metadata
+      if (repoResp.status === 'fulfilled' && repoResp.value.ok) {
+        const r = await repoResp.value.json();
+        if (r.description) parts.push(`About: ${r.description}`);
+        if (r.topics?.length) parts.push(`Topics: ${r.topics.join(', ')}`);
+        parts.push(`Stars: ${r.stargazers_count}, Forks: ${r.forks_count}`);
+        if (r.license?.spdx_id) parts.push(`License: ${r.license.spdx_id}`);
+        if (r.language) parts.push(`Primary language: ${r.language}`);
+      }
+
+      // File tree
+      if (contentsResp.status === 'fulfilled' && contentsResp.value.ok) {
+        const files = await contentsResp.value.json();
+        if (Array.isArray(files)) {
+          const tree = files.map(f => `${f.type === 'dir' ? '/' : ''}${f.name}`).join(', ');
+          parts.push(`Root files: ${tree}`);
+        }
+      }
+
+      // Languages breakdown
+      if (langsResp.status === 'fulfilled' && langsResp.value.ok) {
+        const langs = await langsResp.value.json();
+        const total = Object.values(langs).reduce((a, b) => a + b, 0);
+        if (total > 0) {
+          const breakdown = Object.entries(langs)
+            .map(([lang, bytes]) => `${lang} ${Math.round(bytes / total * 100)}%`)
+            .join(', ');
+          parts.push(`Languages: ${breakdown}`);
+        }
+      }
+
+      // README
+      if (readmeResp.status === 'fulfilled' && readmeResp.value.ok) {
+        const readme = await readmeResp.value.json();
+        if (readme.content) {
+          try {
+            const text = atob(readme.content).slice(0, 4000);
+            parts.push(`README:\n${text}`);
+          } catch { /* base64 decode failed */ }
+        }
+      }
+
+      if (parts.length === 0) return null;
+
+      const data = parts.join('\n');
+      chrome.storage.local.set({ [cacheKey]: { data, ts: Date.now() } });
+      return data;
+    } catch {
+      return null; // network error, fallback to DOM
+    }
+  }
+
   // --- Stack Detection ---
 
   function detectStack() {
@@ -466,7 +543,7 @@
 
   // --- Full Repo Context ---
 
-  function getRepoContext(repoInfo, stackInfo) {
+  function getRepoContextDOM(repoInfo, stackInfo) {
     const parts = [];
 
     // 1. About / description
@@ -533,6 +610,16 @@
     return parts.join('\n') || null;
   }
 
+  async function getRepoContext(repoInfo, stackInfo) {
+    // Try GitHub API first (richer data, no DOM fragility)
+    if (repoInfo.platform === 'github') {
+      const apiContext = await fetchRepoContextAPI(repoInfo.owner, repoInfo.repo);
+      if (apiContext) return apiContext;
+    }
+    // Fallback to DOM scraping
+    return getRepoContextDOM(repoInfo, stackInfo);
+  }
+
   // --- Quick Summary ---
 
   function getBasicSummary(repoInfo, stackInfo) {
@@ -575,7 +662,7 @@
     }
 
     // Check cache first
-    chrome.storage.local.get([cacheKey], (data) => {
+    chrome.storage.local.get([cacheKey], async (data) => {
       const cached = data[cacheKey];
       if (cached && (Date.now() - cached.ts < 24 * 60 * 60 * 1000)) {
         panel.textContent = cached.text;
@@ -589,7 +676,7 @@
       spinner.textContent = 'Generating summary...';
       panel.appendChild(spinner);
 
-      const context = getRepoContext(repoInfo, stackInfo);
+      const context = await getRepoContext(repoInfo, stackInfo);
       if (!context) {
         panel.textContent = 'No repo info found on this page.';
         return;
@@ -677,7 +764,8 @@
     panel.append(modelBar, messages, inputRow);
     dropdown.appendChild(panel);
 
-    const repoContext = getRepoContext(repoInfo, stackInfo) || '';
+    let repoContext = '';
+    getRepoContext(repoInfo, stackInfo).then(ctx => { repoContext = ctx || ''; });
     const conversationHistory = [];
 
     function renderMarkdown(text) {
