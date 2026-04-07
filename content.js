@@ -436,7 +436,11 @@
 
       const iconEl = document.createElement('div');
       iconEl.className = 'ai-install-confirm-icon';
-      iconEl.textContent = toolIcon;
+      if (toolIcon.startsWith('<svg')) {
+        iconEl.innerHTML = toolIcon;
+      } else {
+        iconEl.textContent = toolIcon;
+      }
 
       const titleEl = document.createElement('div');
       titleEl.className = 'ai-install-confirm-title';
