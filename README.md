@@ -70,7 +70,9 @@ Before installing, see key trust indicators (GitHub only):
 
 ### From Chrome Web Store
 
-Coming soon — or install manually:
+[**Add to Chrome**](https://chromewebstore.google.com/detail/pbfofhbacoeelkokidbdcljfmhakpngh)
+
+Or install manually:
 
 ### Manual Install
 
