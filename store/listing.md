@@ -39,4 +39,4 @@ Developer Tools
 English
 
 ## Privacy Policy URL
-https://pirajoke.github.io/smile/privacy-policy.html
+https://pirajoke.github.io/askyourgit/privacy-policy.html
